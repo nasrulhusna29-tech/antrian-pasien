@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel Petugas</title>
+    <style>
+        button { font-size: 20px; padding: 20px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Kontrol Antrean</h1>
+    <button onclick="panggilBerikutnya()">PANGGIL BERIKUTNYA</button>
+    <p id="status"></p>
+
+    <script>
+        const OWNER = 'USERNAME_GITHUB_ANDA';
+        const REPO = 'NAMA_REPO_ANDA';
+        const TOKEN = 'GHP_TOKEN_ANDA'; // Masukkan GitHub Token di sini
+
+        async function panggilBerikutnya() {
+            document.getElementById('status').innerText = "Memproses...";
+            
+            // 1. Ambil data lama & SHA file (diperlukan GitHub API untuk update)
+            const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/data.json`, {
+                headers: { 'Authorization': `token ${TOKEN}` }
+            });
+            const fileData = await res.json();
+            const currentContent = JSON.parse(atob(fileData.content));
+            const newNomor = currentContent.nomor_sekarang + 1;
+
+            // 2. Update file data.json di GitHub
+            const update = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/data.json`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Update antrean ke ${newNomor}`,
+                    content: btoa(JSON.stringify({ nomor_sekarang: newNomor })),
+                    sha: fileData.sha
+                })
+            });
+
+            if(update.ok) {
+                document.getElementById('status').innerText = "Berhasil memanggil nomor: " + newNomor;
+            }
+        }
+    </script>
+</body>
+</html>
