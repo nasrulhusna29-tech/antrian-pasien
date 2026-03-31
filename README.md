@@ -1,2 +1,0 @@
-# antrian-pasien
-antrian pasien 
