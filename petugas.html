@@ -1,49 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Panel Petugas</title>
+    <meta charset="UTF-8">
+    <title>Panel Petugas - Panggil Antrean</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        button { font-size: 20px; padding: 20px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 10px; }
+        body { background-color: #FDF5E6; }
+        .btn-panggil { background-color: #1A1A1A; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; margin-bottom: 5px; width: 80%; }
     </style>
 </head>
-<body>
-    <h1>Kontrol Antrean</h1>
-    <button onclick="panggilBerikutnya()">PANGGIL BERIKUTNYA</button>
-    <p id="status"></p>
+<body class="p-8">
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Control Panel Petugas</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+        
+        <div class="bg-[#B194C1] p-6 rounded-[30px] flex flex-col items-center text-white shadow-lg">
+            <span class="text-xs font-semibold">Antrian Saat Ini</span>
+            <h1 id="val-umum" class="text-4xl font-black my-2">AB-0</h1>
+            <button onclick="panggil('umum')" class="btn-panggil">Panggil Berikutnya</button>
+            <button onclick="ulang('umum')" class="btn-panggil">Panggil Ulang</button>
+            <span class="font-bold mt-2">Poli Umum</span>
+        </div>
+
+        <div class="bg-[#D4A017] p-6 rounded-[30px] flex flex-col items-center text-white shadow-lg">
+            <span class="text-xs font-semibold">Antrian Saat Ini</span>
+            <h1 id="val-kia" class="text-4xl font-black my-2">DA-0</h1>
+            <button onclick="panggil('kia')" class="btn-panggil">Panggil Berikutnya</button>
+            <button onclick="ulang('kia')" class="btn-panggil">Panggil Ulang</button>
+            <span class="font-bold mt-2">Poli KIA</span>
+        </div>
+
+        </div>
 
     <script>
-        const OWNER = 'USERNAME_GITHUB_ANDA';
-        const REPO = 'NAMA_REPO_ANDA';
-        const TOKEN = 'GHP_TOKEN_ANDA'; // Masukkan GitHub Token di sini
-
-        async function panggilBerikutnya() {
-            document.getElementById('status').innerText = "Memproses...";
-            
-            // 1. Ambil data lama & SHA file (diperlukan GitHub API untuk update)
-            const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/data.json`, {
-                headers: { 'Authorization': `token ${TOKEN}` }
-            });
-            const fileData = await res.json();
-            const currentContent = JSON.parse(atob(fileData.content));
-            const newNomor = currentContent.nomor_sekarang + 1;
-
-            // 2. Update file data.json di GitHub
-            const update = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/data.json`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: `Update antrean ke ${newNomor}`,
-                    content: btoa(JSON.stringify({ nomor_sekarang: newNomor })),
-                    sha: fileData.sha
-                })
-            });
-
-            if(update.ok) {
-                document.getElementById('status').innerText = "Berhasil memanggil nomor: " + newNomor;
-            }
+        // Logika sederhana untuk simulasi panggil
+        function panggil(poli) {
+            let el = document.getElementById('val-' + poli);
+            let current = parseInt(el.innerText.split('-'));
+            let prefix = el.innerText.split('-');
+            el.innerText = prefix + "-" + (current + 1);
+            alert("Memanggil antrean " + el.innerText + " ke " + poli);
+        }
+        
+        function ulang(poli) {
+            let num = document.getElementById('val-' + poli).innerText;
+            alert("Memanggil ULANG antrean " + num);
         }
     </script>
 </body>
