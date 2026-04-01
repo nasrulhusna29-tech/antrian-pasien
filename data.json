@@ -1,3 +1,8 @@
 {
-  "nomor_sekarang": 0
+  "umum": { "current": "0", "next": "0", "prefix": "AB" },
+  "kia": { "current": "0", "next": "0", "prefix": "DA" },
+  "lansia": { "current": "0", "next": "0", "prefix": "OB" },
+  "jiwa": { "current": "0", "next": "0", "prefix": "CA" },
+  "ims": { "current": "0", "next": "0", "prefix": "TA" },
+  "gigi": { "current": "0", "next": "0", "prefix": "L" }
 }
