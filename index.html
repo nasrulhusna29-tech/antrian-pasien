@@ -1,31 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Antrean Pasien</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <title>Panel Petugas - Panggil Antrean</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { text-align: center; font-family: Arial; padding-top: 50px; background: #f4f4f9; }
-        .card { background: white; margin: auto; padding: 20px; border-radius: 15px; width: 80%; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        #nomor { font-size: 80px; color: #2ecc71; margin: 20px 0; }
+        body { background-color: #FDF5E6; }
+        .btn-panggil { background-color: #1A1A1A; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; margin-bottom: 5px; width: 80%; }
     </style>
 </head>
-<body>
-    <div class="card">
-        <h1>Nomor Antrean Saat Ini</h1>
-        <div id="nomor">Memuat...</div>
-        <p>Silakan pantau terus nomor Anda.</p>
-    </div>
+<body class="p-8">
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Control Panel Petugas</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+        
+        <div class="bg-[#B194C1] p-6 rounded-[30px] flex flex-col items-center text-white shadow-lg">
+            <span class="text-xs font-semibold">Antrian Saat Ini</span>
+            <h1 id="val-umum" class="text-4xl font-black my-2">AB-0</h1>
+            <button onclick="panggil('umum')" class="btn-panggil">Panggil Berikutnya</button>
+            <button onclick="ulang('umum')" class="btn-panggil">Panggil Ulang</button>
+            <span class="font-bold mt-2">Poli Umum</span>
+        </div>
+
+        <div class="bg-[#D4A017] p-6 rounded-[30px] flex flex-col items-center text-white shadow-lg">
+            <span class="text-xs font-semibold">Antrian Saat Ini</span>
+            <h1 id="val-kia" class="text-4xl font-black my-2">DA-0</h1>
+            <button onclick="panggil('kia')" class="btn-panggil">Panggil Berikutnya</button>
+            <button onclick="ulang('kia')" class="btn-panggil">Panggil Ulang</button>
+            <span class="font-bold mt-2">Poli KIA</span>
+        </div>
+
+        </div>
 
     <script>
-        async function fetchAntrean() {
-            // Mengambil file data.json dari GitHub Raw (tambahkan timestamp agar tidak kena cache)
-            const response = await fetch('data.json?t=' + new Date().getTime());
-            const data = await response.json();
-            document.getElementById('nomor').innerText = data.nomor_sekarang;
+        // Logika sederhana untuk simulasi panggil
+        function panggil(poli) {
+            let el = document.getElementById('val-' + poli);
+            let current = parseInt(el.innerText.split('-'));
+            let prefix = el.innerText.split('-');
+            el.innerText = prefix + "-" + (current + 1);
+            alert("Memanggil antrean " + el.innerText + " ke " + poli);
         }
-        setInterval(fetchAntrean, 5000); // Update setiap 5 detik
-        fetchAntrean();
+        
+        function ulang(poli) {
+            let num = document.getElementById('val-' + poli).innerText;
+            alert("Memanggil ULANG antrean " + num);
+        }
     </script>
 </body>
 </html>
