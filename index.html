@@ -1,393 +1,59 @@
-<!doctype html>
-<html lang="id" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Antrian Pasien</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
-  <script src="/_sdk/data_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
-  <style>
-* { font-family: 'Plus Jakarta Sans', sans-serif; }
-@keyframes pulseGlow { 0%,100%{box-shadow:0 0 20px rgba(59,130,246,0.3)} 50%{box-shadow:0 0 40px rgba(59,130,246,0.6)} }
-@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
-.animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
-.animate-fade { animation: fadeIn 0.3s ease-out forwards; }
-.pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
-.toast-enter { animation: slideUp 0.3s ease-out; }
-</style>
-  <style>body { box-sizing: border-box; }</style>
- </head>
- <body class="h-full bg-slate-950 text-white overflow-auto">
-  <div id="app" class="h-full w-full flex flex-col">
-   <nav id="main-nav" class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between flex-shrink-0">
-    <div class="flex items-center gap-3">
-     <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-      <i data-lucide="activity" class="w-5 h-5 text-white"></i>
-     </div>
-     <div>
-      <h1 id="nav-title" class="text-lg font-bold text-white leading-tight">Sistem Antrian Pasien</h1>
-      <p id="nav-subtitle" class="text-xs text-slate-400">RS Sehat Sentosa</p>
-     </div>
-    </div>
-    <div class="flex gap-1 bg-slate-800 rounded-xl p-1"><button onclick="switchView('user')" id="btn-user" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-blue-600 text-white"><span class="hidden sm:inline">Ambil</span> Antrian</button> <button onclick="openMonitorModal()" id="btn-monitor" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white cursor-pointer">Monitor</button> <button onclick="switchView('admin')" id="btn-admin" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white">Admin</button>
-    </div>
-   </nav>
-   <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
-   <div id="monitor-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-40 flex items-center justify-center p-4 overflow-auto">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-6xl animate-fade my-8">
-     <div class="flex items-center justify-between bg-slate-800 px-6 py-4 border-b border-slate-700 flex-shrink-0">
-      <div class="flex items-center gap-3"><i data-lucide="monitor" class="w-6 h-6 text-blue-400"></i>
-       <h2 class="text-xl font-bold text-white">Monitor Antrian Real-Time</h2>
-      </div><button onclick="closeMonitorModal()" class="text-slate-400 hover:text-white transition-all p-1"><i data-lucide="x" class="w-6 h-6"></i></button>
-     </div>
-     <div class="p-6 overflow-auto" style="max-height: 80vh;">
-      <p class="text-slate-400 text-center mb-6" id="monitor-popup-time"></p>
-      <div id="monitor-popup-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
-     </div>
-    </div>
-   </div>
-   <div id="view-user" class="flex-1 overflow-auto p-4 md:p-8">
-    <div class="max-w-4xl mx-auto">
-     <div class="text-center mb-8 animate-slide-up">
-      <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">Pilih Poli Tujuan</h2>
-      <p class="text-slate-400">Ambil nomor antrian sesuai poli yang dituju</p>
-     </div>
-     <div id="poli-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-    </div>
-   </div>
-   <div id="view-admin" class="flex-1 overflow-auto p-4 md:p-8 hidden">
-    <div class="max-w-6xl mx-auto">
-     <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-      <div>
-       <h2 class="text-2xl font-extrabold text-white">Panel Admin</h2>
-       <p class="text-slate-400 text-sm">Kelola antrian semua poli</p>
-      </div><button onclick="confirmReset()" id="btn-reset" class="flex items-center gap-2 px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 rounded-xl text-sm font-semibold hover:bg-red-600/40 transition-all"><i data-lucide="rotate-ccw" class="w-4 h-4"></i>Reset Semua</button>
-     </div>
-     <div id="reset-confirm" class="hidden mb-4 bg-red-950/50 border border-red-600/40 rounded-xl p-4 animate-fade">
-      <p class="text-red-300 font-semibold mb-3">Yakin ingin mereset semua antrian?</p>
-      <div class="flex gap-2">
-       <button onclick="executeReset()" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-all">Ya, Reset</button><button onclick="cancelReset()" class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-600 transition-all">Batal</button>
-      </div>
-     </div>
-     <div id="admin-poli-sections" class="space-y-6"></div>
-    </div>
-   </div>
-  </div>
-  <script>
-const POLI_LIST = [
-  { id: 'umum', name: 'Poli Umum', prefix: 'A', icon: 'stethoscope', color: 'blue' },
-  { id: 'gigi', name: 'Poli Gigi', prefix: 'B', icon: 'smile', color: 'emerald' },
-  { id: 'anak', name: 'Poli Anak', prefix: 'C', icon: 'baby', color: 'amber' },
-  { id: 'mata', name: 'Poli Mata', prefix: 'D', icon: 'eye', color: 'violet' },
-  { id: 'jantung', name: 'Poli Jantung', prefix: 'E', icon: 'heart-pulse', color: 'rose' },
-  { id: 'saraf', name: 'Poli Saraf', prefix: 'F', icon: 'brain', color: 'cyan' },
-];
-
-const COLOR_MAP = {
-  blue: { bg: 'bg-blue-600', bgLight: 'bg-blue-600/10', border: 'border-blue-600/30', text: 'text-blue-400', ring: 'ring-blue-500' },
-  emerald: { bg: 'bg-emerald-600', bgLight: 'bg-emerald-600/10', border: 'border-emerald-600/30', text: 'text-emerald-400', ring: 'ring-emerald-500' },
-  amber: { bg: 'bg-amber-500', bgLight: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', ring: 'ring-amber-500' },
-  violet: { bg: 'bg-violet-600', bgLight: 'bg-violet-600/10', border: 'border-violet-600/30', text: 'text-violet-400', ring: 'ring-violet-500' },
-  rose: { bg: 'bg-rose-600', bgLight: 'bg-rose-600/10', border: 'border-rose-600/30', text: 'text-rose-400', ring: 'ring-rose-500' },
-  cyan: { bg: 'bg-cyan-600', bgLight: 'bg-cyan-600/10', border: 'border-cyan-600/30', text: 'text-cyan-400', ring: 'ring-cyan-500' },
-};
-
-let allData = [];
-let currentView = 'user';
-let isResetting = false;
-
-function showToast(msg, type = 'success') {
-  const container = document.getElementById('toast-container');
-  const colors = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
-  const t = document.createElement('div');
-  t.className = `${colors} text-white px-4 py-3 rounded-xl text-sm font-semibold shadow-lg toast-enter flex items-center gap-2`;
-  const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
-  t.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i> ${msg}`;
-  container.appendChild(t);
-  lucide.createIcons();
-  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
-}
-
-function openMonitorModal() {
-  document.getElementById('monitor-modal').classList.remove('hidden');
-  renderMonitorPopup();
-  updateMonitorPopupTime();
-}
-
-function closeMonitorModal() {
-  document.getElementById('monitor-modal').classList.add('hidden');
-}
-
-function updateMonitorPopupTime() {
-  const el = document.getElementById('monitor-popup-time');
-  if (el) el.textContent = new Date().toLocaleString('id-ID');
-}
-
-function switchView(view) {
-  currentView = view;
-  ['user','admin'].forEach(v => {
-    document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
-    const btn = document.getElementById(`btn-${v}`);
-    if (btn) {
-      if (v === view) { btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-blue-600 text-white'; }
-      else { btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white'; }
-    }
-  });
-  renderAll();
-}
-
-function getPoliData(poliId) { return allData.filter(d => d.poli === poliId); }
-function getByStatus(poliId, status) { return getPoliData(poliId).filter(d => d.status === status); }
-function getCurrentCalled(poliId) { const called = getByStatus(poliId, 'Dipanggil'); return called.length > 0 ? called[called.length - 1] : null; }
-function getNextWaiting(poliId) { const waiting = getByStatus(poliId, 'Menunggu'); return waiting.length > 0 ? waiting[0] : null; }
-function getNextNumber(poliId, prefix) {
-  const poliData = getPoliData(poliId);
-  if (poliData.length === 0) return `${prefix}001`;
-  const nums = poliData.map(d => parseInt(d.queue_id.slice(1))).filter(n => !isNaN(n));
-  const max = nums.length > 0 ? Math.max(...nums) : 0;
-  return `${prefix}${String(max + 1).padStart(3, '0')}`;
-}
-
-async function takeQueue(poliId) {
-  const poli = POLI_LIST.find(p => p.id === poliId);
-  if (!poli) return;
-  if (allData.length >= 999) { showToast('Batas antrian tercapai (999)', 'error'); return; }
-  const btn = document.getElementById(`take-btn-${poliId}`);
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mengambil...'; lucide.createIcons(); }
-  const queueId = getNextNumber(poliId, poli.prefix);
-  const result = await window.dataSdk.create({
-    queue_id: queueId,
-    poli: poliId,
-    taken_time: new Date().toISOString(),
-    status: 'Menunggu'
-  });
-  if (btn) { btn.disabled = false; btn.innerHTML = `<i data-lucide="ticket" class="w-5 h-5"></i> Ambil Antrian`; lucide.createIcons(); }
-  if (result.isOk) { showToast(`Antrian ${queueId} berhasil diambil!`); }
-  else { showToast('Gagal mengambil antrian', 'error'); }
-}
-
-async function callNext(poliId) {
-  const currentCalled = getCurrentCalled(poliId);
-  if (currentCalled) {
-    const r1 = await window.dataSdk.update({ ...currentCalled, status: 'Selesai' });
-    if (!r1.isOk) { showToast('Gagal memperbarui antrian', 'error'); return; }
-  }
-  const next = getNextWaiting(poliId);
-  if (!next) { showToast('Tidak ada antrian menunggu', 'info'); return; }
-  const r2 = await window.dataSdk.update({ ...next, status: 'Dipanggil' });
-  if (r2.isOk) { showToast(`Memanggil antrian ${next.queue_id}`); }
-  else { showToast('Gagal memanggil antrian', 'error'); }
-}
-
-async function skipCurrent(poliId) {
-  const currentCalled = getCurrentCalled(poliId);
-  if (currentCalled) {
-    const r = await window.dataSdk.update({ ...currentCalled, status: 'Selesai' });
-    if (r.isOk) showToast(`${currentCalled.queue_id} selesai`);
-  }
-}
-
-function confirmReset() { document.getElementById('reset-confirm').classList.remove('hidden'); }
-function cancelReset() { document.getElementById('reset-confirm').classList.add('hidden'); }
-async function executeReset() {
-  if (isResetting) return;
-  isResetting = true;
-  document.getElementById('reset-confirm').classList.add('hidden');
-  showToast('Mereset semua antrian...', 'info');
-  for (const item of [...allData]) {
-    await window.dataSdk.delete(item);
-  }
-  isResetting = false;
-  showToast('Semua antrian telah direset!');
-}
-
-function renderAll() {
-  if (currentView === 'user') renderUserView();
-  if (currentView === 'admin') renderAdminView();
-}
-
-function renderUserView() {
-  const container = document.getElementById('poli-cards');
-  if (!container.dataset.built) {
-    container.innerHTML = POLI_LIST.map(poli => {
-      const c = COLOR_MAP[poli.color];
-      return `
-      <div class="animate-slide-up ${c.bgLight} border ${c.border} rounded-2xl p-6 hover:scale-[1.02] transition-transform" style="animation-delay:${POLI_LIST.indexOf(poli)*80}ms">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-12 h-12 ${c.bg} rounded-xl flex items-center justify-center"><i data-lucide="${poli.icon}" class="w-6 h-6 text-white"></i></div>
-          <div><h3 class="font-bold text-white text-lg">${poli.name}</h3><p class="text-xs text-slate-400">Prefix: ${poli.prefix}</p></div>
-        </div>
-        <div class="flex items-center justify-between mb-4">
-          <div><p class="text-xs text-slate-500 mb-1">Menunggu</p><p id="user-waiting-${poli.id}" class="${c.text} font-extrabold text-2xl">0</p></div>
-          <div class="text-right"><p class="text-xs text-slate-500 mb-1">Dipanggil</p><p id="user-called-${poli.id}" class="text-white font-extrabold text-2xl">---</p></div>
-        </div>
-        <button id="take-btn-${poli.id}" onclick="takeQueue('${poli.id}')" class="w-full ${c.bg} text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-          <i data-lucide="ticket" class="w-5 h-5"></i> Ambil Antrian
-        </button>
-      </div>`;
-    }).join('');
-    container.dataset.built = '1';
-    lucide.createIcons();
-  }
-  POLI_LIST.forEach(poli => {
-    const waitEl = document.getElementById(`user-waiting-${poli.id}`);
-    const callEl = document.getElementById(`user-called-${poli.id}`);
-    if (waitEl) waitEl.textContent = getByStatus(poli.id, 'Menunggu').length;
-    const called = getCurrentCalled(poli.id);
-    if (callEl) callEl.textContent = called ? called.queue_id : '---';
-  });
-}
-
-function renderMonitorPopup() {
-  const container = document.getElementById('monitor-popup-grid');
-  container.innerHTML = POLI_LIST.map(poli => {
-    const c = COLOR_MAP[poli.color];
-    const called = getCurrentCalled(poli.id);
-    const next = getNextWaiting(poli.id);
-    const waiting = getByStatus(poli.id, 'Menunggu');
-    return `
-    <div class="bg-slate-900 border ${c.border} rounded-2xl overflow-hidden">
-      <div class="${c.bg} px-4 py-3 flex items-center gap-2">
-        <i data-lucide="${poli.icon}" class="w-5 h-5 text-white"></i>
-        <span class="font-bold text-white">${poli.name}</span>
-      </div>
-      <div class="p-5 text-center">
-        <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Sedang Dipanggil</p>
-        <p class="text-5xl font-extrabold text-white mb-4 pulse-glow inline-block px-4 py-2 rounded-xl">${called ? called.queue_id : '---'}</p>
-        <div class="flex justify-center gap-6">
-          <div><p class="text-xs text-slate-500">Berikutnya</p><p class="${c.text} font-bold text-xl">${next ? next.queue_id : '---'}</p></div>
-          <div><p class="text-xs text-slate-500">Menunggu</p><p class="text-slate-300 font-bold text-xl">${waiting.length}</p></div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  lucide.createIcons();
-}
-
-function renderAdminView() {
-  const container = document.getElementById('admin-poli-sections');
-  container.innerHTML = POLI_LIST.map(poli => {
-    const c = COLOR_MAP[poli.color];
-    const called = getCurrentCalled(poli.id);
-    const next = getNextWaiting(poli.id);
-    const waiting = getByStatus(poli.id, 'Menunggu');
-    const done = getByStatus(poli.id, 'Selesai');
-    return `
-    <div class="bg-slate-900 border ${c.border} rounded-2xl overflow-hidden">
-      <div class="${c.bg} px-5 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-2"><i data-lucide="${poli.icon}" class="w-5 h-5 text-white"></i><span class="font-bold text-white">${poli.name}</span></div>
-        <span class="text-xs text-white/70">${getPoliData(poli.id).length} total</span>
-      </div>
-      <div class="p-5">
-        <div class="flex flex-col sm:flex-row gap-4 mb-4">
-          <div class="flex-1 bg-slate-800 rounded-xl p-4 text-center">
-            <p class="text-xs text-slate-500 mb-1">Dipanggil</p>
-            <p class="text-3xl font-extrabold text-white">${called ? called.queue_id : '---'}</p>
-          </div>
-          <div class="flex-1 bg-slate-800 rounded-xl p-4 text-center">
-            <p class="text-xs text-slate-500 mb-1">Berikutnya</p>
-            <p class="text-3xl font-extrabold ${c.text}">${next ? next.queue_id : '---'}</p>
-          </div>
-        </div>
-        <div class="flex gap-2 mb-4">
-          <button onclick="callNext('${poli.id}')" class="${c.bg} text-white px-4 py-2.5 rounded-xl font-semibold text-sm flex-1 flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-            <i data-lucide="megaphone" class="w-4 h-4"></i> Panggil Berikutnya
-          </button>
-          ${called ? `<button onclick="skipCurrent('${poli.id}')" class="bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-slate-600 transition-all">
-            <i data-lucide="check" class="w-4 h-4"></i> Selesai
-          </button>` : ''}
-        </div>
-        ${waiting.length > 0 ? `
-        <div class="mb-3">
-          <p class="text-xs text-slate-500 uppercase tracking-wider mb-2 font-semibold">Menunggu (${waiting.length})</p>
-          <div class="flex flex-wrap gap-2">${waiting.map(w => `<span class="${c.bgLight} ${c.text} border ${c.border} px-3 py-1 rounded-lg text-sm font-semibold">${w.queue_id}</span>`).join('')}</div>
-        </div>` : ''}
-        ${done.length > 0 ? `
-        <div>
-          <p class="text-xs text-slate-500 uppercase tracking-wider mb-2 font-semibold">Selesai (${done.length})</p>
-          <div class="flex flex-wrap gap-2">${done.map(d => `<span class="bg-slate-800 text-slate-500 px-3 py-1 rounded-lg text-sm font-semibold line-through">${d.queue_id}</span>`).join('')}</div>
-        </div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-  lucide.createIcons();
-}
-
-const defaultConfig = {
-  app_title: 'Sistem Antrian Pasien',
-  hospital_name: 'RS Sehat Sentosa',
-  background_color: '#020617',
-  surface_color: '#0f172a',
-  text_color: '#ffffff',
-  primary_color: '#2563eb',
-  accent_color: '#10b981',
-  font_family: 'Plus Jakarta Sans',
-  font_size: 16
-};
-
-function applyConfig(config) {
-  const title = config.app_title || defaultConfig.app_title;
-  const hospital = config.hospital_name || defaultConfig.hospital_name;
-  const font = config.font_family || defaultConfig.font_family;
-  const bg = config.background_color || defaultConfig.background_color;
-  const surface = config.surface_color || defaultConfig.surface_color;
-  const textCol = config.text_color || defaultConfig.text_color;
-
-  document.getElementById('nav-title').textContent = title;
-  document.getElementById('nav-subtitle').textContent = hospital;
-  document.body.style.fontFamily = `${font}, sans-serif`;
-  document.body.style.backgroundColor = bg;
-  document.body.style.color = textCol;
-  document.getElementById('main-nav').style.backgroundColor = surface;
-}
-
-if (window.elementSdk) {
-  window.elementSdk.init({
-    defaultConfig,
-    onConfigChange: async (config) => { applyConfig(config); },
-    mapToCapabilities: (config) => ({
-      recolorables: [
-        { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
-        { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
-        { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
-        { get: () => config.primary_color || defaultConfig.primary_color, set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); } },
-        { get: () => config.accent_color || defaultConfig.accent_color, set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
-      ],
-      borderables: [],
-      fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
-      fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } },
-    }),
-    mapToEditPanelValues: (config) => new Map([
-      ['app_title', config.app_title || defaultConfig.app_title],
-      ['hospital_name', config.hospital_name || defaultConfig.hospital_name],
-    ])
-  });
-}
+// GANTI BAGIAN INI DI HTML ANDA
+const WEB_APP_URL = "TEMPEL_URL_DEPLOY_ANDA_DI_SINI"; 
 
 const dataHandler = {
-  onDataChanged(data) {
+  async onDataChanged(data) {
     allData = data;
     renderAll();
   }
 };
 
+// Simulasi SDK menggunakan fetch ke Google Sheets
+window.dataSdk = {
+  async init(handler) {
+    this.handler = handler;
+    this.fetchData();
+    setInterval(() => this.fetchData(), 3000); // Sinkronisasi otomatis tiap 3 detik
+    return { isOk: true };
+  },
+  async fetchData() {
+    try {
+      const response = await fetch(WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'read' })
+      });
+      const data = await response.json();
+      this.handler.onDataChanged(data);
+    } catch (e) { console.error("Sync Error:", e); }
+  },
+  async create(item) {
+    const res = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ ...item, action: 'create' })
+    });
+    this.fetchData();
+    return { isOk: true };
+  },
+  async update(item) {
+    const res = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ ...item, action: 'update' })
+    });
+    this.fetchData();
+    return { isOk: true };
+  },
+  async delete(item) {
+    const res = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'reset' })
+    });
+    this.fetchData();
+    return { isOk: true };
+  }
+};
+
+// Jalankan inisialisasi
 (async () => {
-  const result = await window.dataSdk.init(dataHandler);
-  if (!result.isOk) { showToast('Gagal menghubungkan ke database', 'error'); }
+  await window.dataSdk.init(dataHandler);
   applyConfig(defaultConfig);
 })();
-
-setInterval(() => {
-  if (document.getElementById('monitor-modal').classList.contains('hidden') === false) {
-    updateMonitorPopupTime();
-  }
-}, 1000);
-
-lucide.createIcons();
-  </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e558fe0866c81ae',t:'MTc3NTAyNTIwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
